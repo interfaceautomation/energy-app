@@ -7,43 +7,56 @@
 
 body {
     font-family: 'Roboto', sans-serif;
-    background-color: #1a1a1a;
-    color: #ffffff;
-    max-width: 900px;
+    background-color: #f8fafc;
+    color: #1a202c;
+    max-width: 1000px;
     margin: 0 auto;
-    padding: 20px;
+    padding: 30px 20px;
     line-height: 1.6;
-    -webkit-tap-highlight-color: transparent; /* Remove tap highlight on mobile */
+    -webkit-tap-highlight-color: transparent;
+}
+
+/* Logo */
+.logo {
+    display: block;
+    max-width: 200px;
+    margin: 0 auto 20px;
+    animation: fadeIn 1s ease-in;
 }
 
 /* Header */
 h1 {
     font-family: 'Poppins', sans-serif;
-    font-size: 2.5rem;
-    background: linear-gradient(45deg, #00d4ff, #007bff);
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
+    font-weight: 600;
+    font-size: 2.8rem;
+    color: #ff6f61;
     text-align: center;
-    margin-bottom: 30px;
+    margin-bottom: 40px;
     animation: fadeIn 1s ease-in;
 }
 
 h2 {
     font-family: 'Poppins', sans-serif;
-    font-size: 1.8rem;
-    color: #00d4ff;
-    margin-bottom: 15px;
+    font-weight: 600;
+    font-size: 1.9rem;
+    color: #1a202c;
+    margin-bottom: 20px;
 }
 
 /* Containers */
-div {
-    background: #2c2c2c;
-    padding: 20px;
-    border-radius: 10px;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+.container {
+    background: #ffffff;
+    padding: 25px;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     margin-bottom: 30px;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
     animation: fadeInUp 0.8s ease-in;
+}
+
+.container:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
 }
 
 /* Date row */
@@ -51,36 +64,103 @@ div {
     display: flex;
     gap: 20px;
     flex-wrap: wrap;
-    margin-bottom: 15px;
+    margin-bottom: 20px;
 }
 
 .date-input {
     flex: 1;
-    min-width: 150px;
+    min-width: 160px;
 }
 
 label {
     display: block;
     font-size: 1rem;
-    color: #cccccc;
-    margin-bottom: 5px;
+    font-weight: 500;
+    color: #4a5568;
+    margin-bottom: 8px;
 }
 
 input[type="date"] {
     padding: 12px;
-    font-size: 1rem;
-    border: none;
-    border-radius: 5px;
-    background: #3a3a3a;
-    color: #ffffff;
+    font-size: 1.1rem;
+    font-weight: 400;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    background: #edf2f7;
+    color: #1a202c;
     width: 100%;
-    min-height: 44px; /* Minimum touch target size */
-    transition: background 0.3s;
+    min-height: 48px;
+    transition: border-color 0.3s, background 0.3s;
 }
 
 input[type="date"]:focus {
     outline: none;
-    background: #4a4a4a;
+    border-color: #40c4ff;
+    background: #ffffff;
+    box-shadow: 0 0 0 3px rgba(64, 196, 255, 0.1);
+}
+
+/* Range row */
+.range-row {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+}
+
+.range-button {
+    padding: 10px 16px;
+    font-size: 1rem;
+    font-family: 'Roboto', sans-serif;
+    font-weight: 500;
+    border: none;
+    border-radius: 8px;
+    background: #edf2f7;
+    color: #1a202c;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.2s, box-shadow 0.2s;
+    min-height: 40px;
+}
+
+.range-button:hover, .range-button:active {
+    background: #e2e8f0;
+    transform: scale(1.02);
+}
+
+.range-button.active {
+    background: linear-gradient(45deg, #ff6f61, #ff8f7a);
+    color: #ffffff;
+    box-shadow: 0 2px 6px rgba(255, 111, 97, 0.3);
+}
+
+/* Result container */
+.result-container {
+    text-align: center;
+    margin: 25px 0;
+}
+
+/* Result box */
+#result {
+    background: #ffffff;
+    border: 2px solid #e6fffa;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    display: inline-block;
+    animation: fadeIn 0.5s ease-in;
+}
+
+.result-date {
+    font-size: 1rem;
+    font-weight: 400;
+    color: #4a5568;
+    margin-bottom: 8px;
+}
+
+.result-usage {
+    font-size: 1.8rem;
+    font-weight: 600;
+    color: #1a202c;
 }
 
 /* Button row */
@@ -91,57 +171,47 @@ input[type="date"]:focus {
 }
 
 /* Buttons */
-button {
-    padding: 14px 20px;
-    font-size: 1rem;
+button#calcButton, button#exportButton {
+    padding: 14px 24px;
+    font-size: 1.1rem;
     font-family: 'Roboto', sans-serif;
+    font-weight: 500;
     border: none;
-    border-radius: 5px;
+    border-radius: 8px;
     cursor: pointer;
-    transition: transform 0.2s, box-shadow 0.2s, background-color 0.2s;
+    transition: transform 0.2s, box-shadow 0.2s, background 0.2s;
     flex: 1;
-    min-width: 120px;
-    min-height: 48px; /* Minimum touch target size */
+    min-width: 130px;
+    min-height: 50px;
 }
 
 button#calcButton {
-    background-color: #007bff;
+    background: linear-gradient(45deg, #ff6f61, #ff8f7a);
     color: #ffffff;
 }
 
 button#calcButton:hover, button#calcButton:active {
-    background-color: #0056b3;
+    background: linear-gradient(45deg, #e65a50, #e67964);
     transform: scale(1.05);
-    box-shadow: 0 2px 8px rgba(0, 123, 255, 0.5);
+    box-shadow: 0 4px 8px rgba(255, 111, 97, 0.3);
 }
 
 button#exportButton {
-    background-color: #28a745;
+    background: linear-gradient(45deg, #40c4ff, #7dd3fc);
     color: #ffffff;
 }
 
 button#exportButton:hover, button#exportButton:active {
-    background-color: #218838;
+    background: linear-gradient(45deg, #2ba8e0, #5bb8f0);
     transform: scale(1.05);
-    box-shadow: 0 2px 8px rgba(40, 167, 69, 0.5);
+    box-shadow: 0 4px 8px rgba(64, 196, 255, 0.3);
 }
 
-/* Result container */
-.result-container {
-    text-align: center;
-    margin-top: 20px;
-}
-
-/* Result text */
-#result {
-    font-size: 1.5rem;
-    font-weight: bold;
-    color: #ffffff;
-    background: rgba(0, 123, 255, 0.2);
-    padding: 15px;
-    border-radius: 5px;
-    display: inline-block;
-    animation: fadeIn 0.5s ease-in;
+/* Latest reading */
+p#latest {
+    font-size: 1.2rem;
+    font-weight: 400;
+    color: #1a202c;
 }
 
 /* Animations */
@@ -158,19 +228,23 @@ button#exportButton:hover, button#exportButton:active {
 /* Responsive design for mobile */
 @media (max-width: 600px) {
     body {
-        padding: 15px;
+        padding: 20px 15px;
+    }
+    .logo {
+        max-width: 150px;
+        margin-bottom: 15px;
     }
     h1 {
-        font-size: 2rem;
-        margin-bottom: 20px;
+        font-size: 2.2rem;
+        margin-bottom: 25px;
     }
     h2 {
-        font-size: 1.5rem;
-        margin-bottom: 10px;
+        font-size: 1.6rem;
+        margin-bottom: 15px;
     }
-    div {
-        padding: 15px;
-        margin-bottom: 20px;
+    .container {
+        padding: 20px;
+        margin-bottom: 25px;
     }
     .date-row {
         flex-direction: column;
@@ -180,27 +254,43 @@ button#exportButton:hover, button#exportButton:active {
         min-width: 100%;
     }
     input[type="date"] {
-        font-size: 1.1rem;
+        font-size: 1.2rem;
         padding: 12px;
+        min-height: 50px;
+    }
+    .range-row {
+        flex-direction: column;
+        gap: 10px;
+    }
+    .range-button {
+        width: 100%;
+        font-size: 1rem;
+        padding: 10px;
+        min-height: 44px;
+    }
+    .result-container {
+        margin: 20px 0;
+    }
+    #result {
+        width: 100%;
+        padding: 16px;
+        box-sizing: border-box;
+    }
+    .result-date {
+        font-size: 0.9rem;
+    }
+    .result-usage {
+        font-size: 1.6rem;
     }
     .button-row {
         flex-direction: column;
         gap: 15px;
     }
-    button {
+    button#calcButton, button#exportButton {
         width: 100%;
-        font-size: 1.1rem;
+        font-size: 1.2rem;
         padding: 14px;
-        min-height: 50px;
-    }
-    .result-container {
-        margin-top: 15px;
-    }
-    #result {
-        font-size: 1.3rem;
-        padding: 12px;
-        width: 100%;
-        box-sizing: border-box;
+        min-height: 52px;
     }
     p#latest {
         font-size: 1.1rem;
