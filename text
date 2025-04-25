@@ -1,0 +1,6 @@
+git init
+git add index.html script.js style.css
+git commit -m "Initial web app"
+git branch -M main
+git remote add origin https://github.com/tylers2394/energy-app.git
+git push -u origin main
