@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Energy Usage Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <h1>Energy Usage Dashboard</h1>
+    <div>
+        <h2>Latest kWh Reading</h2>
+        <p id="latest">Loading...</p>
+    </div>
+    <div>
+        <h2>Calculate Usage</h2>
+        <label for="startDate">Start Date:</label>
+        <input type="date" id="startDate">
+        <label for="endDate">End Date:</label>
+        <input type="date" id="endDate">
+        <button id="calcButton">Calculate Usage</button>
+        <p id="result">Enter dates to calculate usage</p>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
