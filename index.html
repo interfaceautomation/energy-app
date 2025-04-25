@@ -3,23 +3,35 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Power Usage Dashboard</title>
+    <title>Energy Usage Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600&family=Roboto:wght@400&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <h1>665 D Street Sub Meter Power Usage Dashboard</h1>
     <div>
-        <h2>Latest Sub Meter kWh Reading</h2>
+        <h2>Latest kWh Reading</h2>
         <p id="latest">Loading...</p>
     </div>
     <div>
         <h2>Calculate Usage</h2>
-        <label for="startDate">Start Date:</label>
-        <input type="date" id="startDate">
-        <label for="endDate">End Date:</label>
-        <input type="date" id="endDate">
-        <button id="calcButton">Calculate Usage</button>
-        <p id="result">Enter dates to calculate usage</p>
+        <div class="date-row">
+            <div class="date-input">
+                <label for="startDate">Start Date:</label>
+                <input type="date" id="startDate">
+            </div>
+            <div class="date-input">
+                <label for="endDate">End Date:</label>
+                <input type="date" id="endDate">
+            </div>
+        </div>
+        <div class="button-row">
+            <button id="calcButton">Calculate Usage</button>
+            <button id="exportButton">Export Data</button>
+        </div>
+        <div class="result-container">
+            <p id="result">Enter dates to calculate usage</p>
+        </div>
     </div>
     <script src="script.js"></script>
 </body>
