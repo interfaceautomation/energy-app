@@ -17,12 +17,6 @@ function formatDateForInput(date) {
     return date.toISOString().split('T')[0];
 }
 
-// Convert UTC date to Eastern Time (UTC-4 for EDT)
-function toEasternTime(date) {
-    const offsetHours = -4; // EDT in June 2025
-    return new Date(date.getTime() + offsetHours * 60 * 60 * 1000);
-}
-
 // Format date to ThingSpeak API timestamp (YYYY-MM-DDTHH:mm:ssZ)
 function formatForThingSpeak(date) {
     return date.toISOString().replace(/\.\d{3}Z$/, 'Z');
@@ -38,9 +32,8 @@ async function fetchLatest() {
         if (isNaN(kwh)) throw new Error('Invalid kWh value');
         const utcDate = new Date(data.created_at);
         console.log('Raw created_at:', data.created_at, 'UTC Date:', utcDate);
-        const easternDate = toEasternTime(utcDate);
-        const dateStr = easternDate.toLocaleDateString('en-US', { timeZone: 'America/New_York' });
-        const timeStr = easternDate.toLocaleTimeString('en-US', { timeZone: 'America/New_York', hour12: true });
+        const dateStr = utcDate.toLocaleDateString('en-US', { timeZone: 'America/New_York' });
+        const timeStr = utcDate.toLocaleTimeString('en-US', { timeZone: 'America/New_York', hour12: true });
         console.log('Eastern timestamp:', `${dateStr}, ${timeStr}`);
         document.getElementById('latest').textContent = `${kwh.toFixed(0)} kWh at ${dateStr}, ${timeStr}`;
     } catch (error) {
@@ -59,21 +52,21 @@ async function calculateUsage(start, end, isThisMonth = false) {
 
         // Create start/end dates in Eastern Time
         const startDateET = new Date(`${start}T00:00:00-04:00`);
-        let endDateET = isThisMonth ? toEasternTime(new Date()) : new Date(`${end}T23:59:59-04:00`);
+        let endDateET = isThisMonth ? new Date() : new Date(`${end}T23:59:59-04:00`);
 
         // Convert to UTC for ThingSpeak API
-        const startDateUTC = new Date(startDateET.getTime() - (-4 * 60 * 60 * 1000));
-        const endDateUTC = new Date(endDateET.getTime() - (-4 * 60 * 60 * 1000));
+        const startDateUTC = new Date(startDateET);
+        const endDateUTC = new Date(endDateET);
 
-        // Query window: ±24 hours
-        const startQueryStartUTC = new Date(startDateUTC.getTime() - 24 * 60 * 60 * 1000);
-        const startQueryEndUTC = new Date(startDateUTC.getTime() + 24 * 60 * 60 * 1000);
-        const endQueryStartUTC = new Date(endDateUTC.getTime() - 24 * 60 * 60 * 1000);
-        const endQueryEndUTC = new Date(endDateUTC.getTime() + 24 * 60 * 60 * 1000);
+        // Query window: ±48 hours
+        const startQueryStartUTC = new Date(startDateUTC.getTime() - 48 * 60 * 60 * 1000);
+        const startQueryEndUTC = new Date(startDateUTC.getTime() + 48 * 60 * 60 * 1000);
+        const endQueryStartUTC = new Date(endDateUTC.getTime() - 48 * 60 * 60 * 1000);
+        const endQueryEndUTC = new Date(endDateUTC.getTime() + 48 * 60 * 60 * 1000);
 
         // Fetch feeds
-        const startUrl = `https://api.thingspeak.com/channels/${channelId}/feeds.json?api_key=${readApiKey}&start=${formatForThingSpeak(startQueryStartUTC)}&end=${formatForThingSpeak(startQueryEndUTC)}&results=4000`;
-        const endUrl = `https://api.thingspeak.com/channels/${channelId}/feeds.json?api_key=${readApiKey}&start=${formatForThingSpeak(endQueryStartUTC)}&end=${formatForThingSpeak(endQueryEndUTC)}&results=4000`;
+        const startUrl = `https://api.thingspeak.com/channels/${channelId}/feeds.json?api_key=${readApiKey}&start=${formatForThingSpeak(startQueryStartUTC)}&end=${formatForThingSpeak(startQueryEndUTC)}&results=8000`;
+        const endUrl = `https://api.thingspeak.com/channels/${channelId}/feeds.json?api_key=${readApiKey}&start=${formatForThingSpeak(endQueryStartUTC)}&end=${formatForThingSpeak(endQueryEndUTC)}&results=8000`;
         console.log('Start query URL:', startUrl);
         console.log('End query URL:', endUrl);
 
@@ -81,8 +74,8 @@ async function calculateUsage(start, end, isThisMonth = false) {
         const [startResponse, endResponse] = await Promise.all([fetch(startUrl), fetch(endUrl)]);
         const startData = await startResponse.json();
         const endData = await endResponse.json();
-        console.log('Start API response:', startData);
-        console.log('End API response:', endData);
+        console.log('Start API response: feeds count:', startData.feeds?.length);
+        console.log('End API response: feeds count:', endData.feeds?.length);
 
         // Validate feeds
         if (!startData.feeds || startData.feeds.length === 0 || !endData.feeds || endData.feeds.length === 0) {
@@ -118,8 +111,8 @@ async function calculateUsage(start, end, isThisMonth = false) {
         }
 
         // Log in ET
-        const startTimeET = toEasternTime(new Date(startFeed.created_at)).toLocaleString('en-US', { timeZone: 'America/New_York' });
-        const endTimeET = toEasternTime(new Date(endFeed.created_at)).toLocaleString('en-US', { timeZone: 'America/New_York' });
+        const startTimeET = new Date(startFeed.created_at).toLocaleString('en-US', { timeZone: 'America/New_York' });
+        const endTimeET = new Date(endFeed.created_at).toLocaleString('en-US', { timeZone: 'America/New_York' });
         console.log(`Selected start: ${startTimeET}, kWh: ${startKwh}`);
         console.log(`Selected end: ${endTimeET}, kWh: ${endKwh}`);
 
@@ -168,7 +161,7 @@ function exportData() {
 
 // Set date range and calculate
 function setDateRange(range) {
-    const today = toEasternTime(new Date());
+    const today = new Date();
     let startDate, endDate;
 
     if (range === 'custom') {
