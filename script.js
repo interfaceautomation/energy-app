@@ -65,15 +65,15 @@ async function calculateUsage(start, end, isThisMonth = false) {
         const startDateUTC = new Date(startDateET.getTime() - (-4 * 60 * 60 * 1000));
         const endDateUTC = new Date(endDateET.getTime() - (-4 * 60 * 60 * 1000));
 
-        // Query window: ±12 hours
-        const startQueryStartUTC = new Date(startDateUTC.getTime() - 12 * 60 * 60 * 1000);
-        const startQueryEndUTC = new Date(startDateUTC.getTime() + 12 * 60 * 60 * 1000);
-        const endQueryStartUTC = new Date(endDateUTC.getTime() - 12 * 60 * 60 * 1000);
-        const endQueryEndUTC = new Date(endDateUTC.getTime() + 12 * 60 * 60 * 1000);
+        // Query window: ±24 hours
+        const startQueryStartUTC = new Date(startDateUTC.getTime() - 24 * 60 * 60 * 1000);
+        const startQueryEndUTC = new Date(startDateUTC.getTime() + 24 * 60 * 60 * 1000);
+        const endQueryStartUTC = new Date(endDateUTC.getTime() - 24 * 60 * 60 * 1000);
+        const endQueryEndUTC = new Date(endDateUTC.getTime() + 24 * 60 * 60 * 1000);
 
         // Fetch feeds
-        const startUrl = `https://api.thingspeak.com/channels/${channelId}/feeds.json?api_key=${readApiKey}&start=${formatForThingSpeak(startQueryStartUTC)}&end=${formatForThingSpeak(startQueryEndUTC)}&results=2000`;
-        const endUrl = `https://api.thingspeak.com/channels/${channelId}/feeds.json?api_key=${readApiKey}&start=${formatForThingSpeak(endQueryStartUTC)}&end=${formatForThingSpeak(endQueryEndUTC)}&results=2000`;
+        const startUrl = `https://api.thingspeak.com/channels/${channelId}/feeds.json?api_key=${readApiKey}&start=${formatForThingSpeak(startQueryStartUTC)}&end=${formatForThingSpeak(startQueryEndUTC)}&results=4000`;
+        const endUrl = `https://api.thingspeak.com/channels/${channelId}/feeds.json?api_key=${readApiKey}&start=${formatForThingSpeak(endQueryStartUTC)}&end=${formatForThingSpeak(endQueryEndUTC)}&results=4000`;
         console.log('Start query URL:', startUrl);
         console.log('End query URL:', endUrl);
 
