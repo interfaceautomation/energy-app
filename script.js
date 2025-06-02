@@ -1,6 +1,11 @@
 const channelId = '2886044';
 const readApiKey = 'VBGILPEUI9QYI7BV';
 
+// Validate YYYY-MM-DD format
+function isValidDateFormat(dateStr) {
+    return /^\d{4}-\d{2}-\d{2}$/.test(dateStr);
+}
+
 // Format date to MM-DD-YYYY
 function formatDate(dateStr) {
     const [year, month, day] = dateStr.split('-');
@@ -12,16 +17,29 @@ function formatDateForInput(date) {
     return date.toISOString().split('T')[0];
 }
 
+// Convert UTC date to Eastern Time (UTC-4 for EDT)
+function toEasternTime(date) {
+    const offsetHours = -4; // EDT in May/June 2025
+    return new Date(date.getTime() + offsetHours * 60 * 60 * 1000);
+}
+
+// Format date to ThingSpeak API timestamp (YYYY-MM-DDTHH:mm:ssZ)
+function formatForThingSpeak(date) {
+    return date.toISOString().replace(/\.\d{3}Z$/, 'Z');
+}
+
 // Fetch and display latest kWh reading
 async function fetchLatest() {
     try {
         const url = `https://api.thingspeak.com/channels/${channelId}/feeds/last.json?api_key=${readApiKey}`;
         const response = await fetch(url);
         const data = await response.json();
-        const kwh = parseFloat(data.field1).toFixed(2);
-        const timestamp = new Date(data.created_at).toLocaleString();
-        document.getElementById('latest').textContent = `${kwh} kWh at ${timestamp}`;
+        const kwh = parseFloat(data.field1);
+        if (isNaN(kwh)) throw new Error('Invalid kWh value');
+        const timestamp = toEasternTime(new Date(data.created_at)).toLocaleString('en-US', { timeZone: 'America/New_York' });
+        document.getElementById('latest').textContent = `${kwh.toFixed(0)} kWh at ${timestamp}`;
     } catch (error) {
+        console.error('fetchLatest error:', error);
         document.getElementById('latest').textContent = 'Error fetching data';
     }
 }
@@ -29,46 +47,109 @@ async function fetchLatest() {
 // Calculate usage for date range
 async function calculateUsage(start, end) {
     try {
-        const url = `https://api.thingspeak.com/channels/${channelId}/feeds.json?api_key=${readApiKey}&start=${start}T00:00:00&end=${end}T23:59:59`;
-        const response = await fetch(url);
-        const data = await response.json();
-        const feeds = data.feeds;
-        if (feeds.length < 2) {
-            document.querySelector('.result-date').textContent = 'Not enough data';
-            document.querySelector('.result-usage').textContent = '0.00 kWh';
+        // Validate date format
+        if (!isValidDateFormat(start) || !isValidDateFormat(end)) {
+            throw new Error('Invalid date format');
+        }
+
+        // Create start/end dates in Eastern Time
+        const startDateET = new Date(`${start}T00:00:00-04:00`);
+        const endDateET = new Date(`${end}T23:59:59-04:00`);
+
+        // Convert to UTC for ThingSpeak API
+        const startDateUTC = new Date(startDateET.getTime() - (-4 * 60 * 60 * 1000));
+        const endDateUTC = new Date(endDateET.getTime() - (-4 * 60 * 60 * 1000));
+
+        // Query window: ±2 hours
+        const startQueryStartUTC = new Date(startDateUTC.getTime() - 2 * 60 * 60 * 1000);
+        const startQueryEndUTC = new Date(startDateUTC.getTime() + 2 * 60 * 60 * 1000);
+        const endQueryStartUTC = new Date(endDateUTC.getTime() - 2 * 60 * 60 * 1000);
+        const endQueryEndUTC = new Date(endDateUTC.getTime() + 2 * 60 * 60 * 1000);
+
+        // Fetch feeds
+        const startUrl = `https://api.thingspeak.com/channels/${channelId}/feeds.json?api_key=${readApiKey}&start=${formatForThingSpeak(startQueryStartUTC)}&end=${formatForThingSpeak(startQueryEndUTC)}&results=1000`;
+        const endUrl = `https://api.thingspeak.com/channels/${channelId}/feeds.json?api_key=${readApiKey}&start=${formatForThingSpeak(endQueryStartUTC)}&end=${formatForThingSpeak(endQueryEndUTC)}&results=1000`;
+
+        // Fetch data
+        const [startResponse, endResponse] = await Promise.all([fetch(startUrl), fetch(endUrl)]);
+        const startData = await startResponse.json();
+        const endData = await endResponse.json();
+        console.log('Start API response:', startData);
+        console.log('End API response:', endData);
+
+        // Validate feeds
+        if (!startData.feeds || startData.feeds.length === 0 || !endData.feeds || endData.feeds.length === 0) {
+            document.querySelector('.result-date').textContent = 'No data available';
+            document.querySelector('.result-usage').textContent = '0 kWh';
             return;
         }
-        const first = parseFloat(feeds[0].field1);
-        const last = parseFloat(feeds[feeds.length - 1].field1);
-        const usage = last - first;
+
+        // Sort feeds
+        startData.feeds.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+        endData.feeds.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+
+        // Find feed closest to startDateET, within 15 minutes
+        const startFeed = startData.feeds.reduce((closest, feed) => {
+            const diff = Math.abs(new Date(feed.created_at) - startDateUTC);
+            const closestDiff = Math.abs(new Date(closest.created_at) - startDateUTC);
+            return diff <= 15 * 60 * 1000 && diff < closestDiff ? feed : closest;
+        }, startData.feeds[0]);
+        const endFeed = endData.feeds.reduce((closest, feed) => {
+            const diff = Math.abs(new Date(feed.created_at) - endDateUTC);
+            const closestDiff = Math.abs(new Date(closest.created_at) - endDateUTC);
+            return diff <= 15 * 60 * 1000 && diff < closestDiff ? feed : closest;
+        }, endData.feeds[endData.feeds.length - 1]);
+
+        // Validate kWh
+        const startKwh = parseFloat(startFeed.field1);
+        const endKwh = parseFloat(endFeed.field1);
+        if (isNaN(startKwh) || isNaN(endKwh)) {
+            document.querySelector('.result-date').textContent = 'Invalid data';
+            document.querySelector('.result-usage').textContent = '0 kWh';
+            return;
+        }
+
+        // Log in ET
+        const startTimeET = toEasternTime(new Date(startFeed.created_at)).toLocaleString('en-US', { timeZone: 'America/New_York' });
+        const endTimeET = toEasternTime(new Date(endFeed.created_at)).toLocaleString('en-US', { timeZone: 'America/New_York' });
+        console.log(`Selected start: ${startTimeET}, kWh: ${startKwh}`);
+        console.log(`Selected end: ${endTimeET}, kWh: ${endKwh}`);
+
+        // Calculate usage
+        const usage = endKwh - startKwh;
+        if (usage < 0) {
+            document.querySelector('.result-date').textContent = 'Invalid usage (negative)';
+            document.querySelector('.result-usage').textContent = '0 kWh';
+            return;
+        }
         const formattedStart = formatDate(start);
         const formattedEnd = formatDate(end);
         document.querySelector('.result-date').textContent = `${formattedStart} to ${formattedEnd}`;
-        document.querySelector('.result-usage').textContent = `${usage.toFixed(2)} kWh`;
-        // Store usage for export
+        document.querySelector('.result-usage').textContent = `${usage.toFixed(0)} kWh`;
         window.lastUsage = { usage: usage.toFixed(2), start, end };
     } catch (error) {
-        document.querySelector('.result-date').textContent = 'Error fetching data';
-        document.querySelector('.result-usage').textContent = '0.00 kWh';
+        console.error('calculateUsage error:', error);
+        document.querySelector('.result-date').textContent = 'Error extracting data';
+        document.querySelector('.result-usage').textContent = '0 kWh';
     }
 }
 
 // Export usage calculation as text report
 function exportData() {
     if (!window.lastUsage) {
-        document.querySelector('.result-date').textContent = 'Please calculate usage first';
-        document.querySelector('.result-usage').textContent = '0.00 kWh';
+        document.querySelector('.result-date').textContent = 'Please select a date range';
+        document.querySelector('.result-usage').textContent = '0 kWh';
         return;
     }
     const { usage, start, end } = window.lastUsage;
     const formattedStart = formatDate(start);
     const formattedEnd = formatDate(end);
-    const reportContent = `665 D Street Sub Meter Power Usage Report\n\nUsage: ${usage} kWh\nFrom: ${formattedStart}\nTo: ${formattedEnd}`;
-    const blob = new Blob([reportContent], { type: 'text/plain;charset=utf-8;' });
+    const reportContent = `665 D Street Submeter Power Usage Report\n\nUsage: ${usage} kWh\nFrom: ${formattedStart}\nTo: ${formattedEnd}`;
+    const blob = new Blob([reportContent], { type: 'text/plain' });
     const link = document.createElement('a');
     const filename = `usage-report-${start}-to-${end}.txt`;
-    link.setAttribute('href', URL.createObjectURL(blob));
-    link.setAttribute('download', filename);
+    link.href = URL.createObjectURL(blob);
+    link.download = filename;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -78,18 +159,18 @@ function exportData() {
 
 // Set date range and calculate
 function setDateRange(range) {
-    const today = new Date();
+    const today = toEasternTime(new Date());
     let startDate, endDate;
 
     if (range === 'custom') {
         document.getElementById('startDate').value = '';
         document.getElementById('endDate').value = '';
-        document.querySelector('.result-date').textContent = 'Select a date range';
-        document.querySelector('.result-usage').textContent = '0.00 kWh';
+        document.querySelector('.result-date').textContent = 'Custom date range';
+        document.querySelector('.result-usage').textContent = '0 kWh';
         return;
     } else if (range === 'this') {
         startDate = new Date(today.getFullYear(), today.getMonth(), 1);
-        endDate = today;
+        endDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
     } else if (range === '1') {
         startDate = new Date(today.getFullYear(), today.getMonth() - 1, 1);
         endDate = new Date(today.getFullYear(), today.getMonth(), 0);
@@ -104,21 +185,20 @@ function setDateRange(range) {
 
 // Initialize latest reading
 fetchLatest();
-setInterval(fetchLatest, 60000); // Update every minute
+setInterval(fetchLatest, 60000);
 
-// Event listeners for calculate button (click and touch)
+// Event listeners for calculate button
 const calcButton = document.getElementById('calcButton');
 calcButton.addEventListener('click', () => {
     const start = document.getElementById('startDate').value;
     const end = document.getElementById('endDate').value;
     if (start && end) {
         calculateUsage(start, end);
-        // Set custom range as active
         document.querySelectorAll('.range-button').forEach(btn => btn.classList.remove('active'));
         document.querySelector('.range-button[data-range="custom"]').classList.add('active');
     } else {
-        document.querySelector('.result-date').textContent = 'Please select both dates';
-        document.querySelector('.result-usage').textContent = '0.00 kWh';
+        document.querySelector('.result-date').textContent = 'Select start and end dates';
+        document.querySelector('.result-usage').textContent = '0 kWh';
     }
 });
 calcButton.addEventListener('touchstart', (e) => {
@@ -126,7 +206,7 @@ calcButton.addEventListener('touchstart', (e) => {
     calcButton.click();
 });
 
-// Event listeners for export button (click and touch)
+// Event listeners for export button
 const exportButton = document.getElementById('exportButton');
 exportButton.addEventListener('click', () => {
     exportData();
